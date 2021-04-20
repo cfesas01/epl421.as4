@@ -48,6 +48,7 @@ void copyFile(int num, char* name,  char* currentdir) {
 */
 int getCount(char* name) {
     int i = 0;
+    int count=0;
     for (i = 1; i < 145; i++) {
         char* s = (char*)malloc(1000 * sizeof(char));
         strcpy(s, "mailbox\\");
@@ -58,11 +59,13 @@ int getCount(char* name) {
         strcat(s, num);
         FILE* f = fopen(s, "rt");
         if (f == NULL) {
-
-            return i;
+        }else{
+            count++;
+            fclose(f);
         }
-        fclose(f);
+        free(s);
     }
+    return count;
 
 }
 
@@ -139,7 +142,6 @@ void createMailbox() {
                 if (check == 1) {
                     temp[i] = '\0';
                     makeDirectory(temp);
-                    int count = getCount(temp);
                     copyFile(i, temp, currentdir);
                 }
 
