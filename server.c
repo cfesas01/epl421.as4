@@ -223,7 +223,37 @@ void workerThread(void *params) {
             strcpy(buffer, "do something stat\r\n");
         }
         else if (strcmp(command, "retr") == 0 && status == 2) {
-            strcpy(buffer, "do something retr\r\n");
+            char msg[sizeof(buffer)-5];
+            char filepath[sizeof(buffer-5+path)];
+            substring(msg, buffer, 5, sizeof(buffer));
+            strcat(filepath,path);
+            strcat(filepath,"/");
+            strcat(filepath,msg);
+            FILE* f = fopen(filepath, "rt");
+            if (f == NULL) {
+                strcpy(buffer, "-ERR no such message\r\n");
+            }else{
+                char line[1000000];
+                char temp[100];
+                int size= getFileSize(char*path, int i);
+                strcpy(buffer, "+OK ");
+                itoa(temp, size);
+                strcpy(buffer, temp);
+                strcpy(buffer, "Bytes \r\n");
+                //Ignore Header
+                int count = 0;
+                while (count < 17) {
+                    fgets(line, 200 , f);
+                    count++;
+                }
+                do{ 
+                    char temp= fgetc(f);    
+                }    
+                while (char temp != 'EOF') 
+                strcpy(buffer, temp);                              
+                strcpy(buffer, ".\r\n"); 
+            }
+            
         }
         else if (strcmp(command, "list") == 0 && status == 2) {
             strcpy(buffer, "do something list\r\n");
