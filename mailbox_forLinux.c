@@ -52,25 +52,22 @@ void copyFile(int num, char* name,int count,  char* currentdir) {
  *   @return int: how many mails the mailbox has +1 (for the next file's name to be set)
 */
 int getCount(char* name) {
-    int i = 0;
-    int count=0;
+    int i;
     for (i = 1; i < 145; i++) {
         char* s = (char*)malloc(1000 * sizeof(char));
-        strcpy(s, "mailbox\\");
+        strcpy(s, "mailbox/");
         strcat(s, name);
-        strcat(s, "\\");
+        strcat(s, "/");
         char* num = (char*)malloc(5 * sizeof(char));
         itoa(i, num, 10);
         strcat(s, num);
         FILE* f = fopen(s, "rt");
         if (f == NULL) {
-        }else{
-            count++;
-            fclose(f);
+
+            return i;
         }
-        free(s);
+        fclose(f);
     }
-    return count;
 
 }
 
@@ -110,7 +107,7 @@ void createMailbox() {
         char* file = (char*)malloc(5 * sizeof(char));
         itoa(i, file, 10);
         char* s = (char*)malloc(1000 * sizeof(char));
-        strcpy(s, "as4-supplementary\\");
+        strcpy(s, "as4-supplementary/");
         strcat(s, file);
         FILE* f = fopen(s, "rt");
         if (f == NULL) {
@@ -147,7 +144,8 @@ void createMailbox() {
                 if (check == 1) {
                     temp[i] = '\0';
                     makeDirectory(temp);
-                    copyFile(i, temp, currentdir);
+                    int count = getCount(temp);
+                    copyFile(i, temp, count, currentdir);
                 }
 
             }
@@ -161,6 +159,7 @@ void createMailbox() {
     }
     free(currentdir);
 }
+
 
 
 int main() {
