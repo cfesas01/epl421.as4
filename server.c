@@ -32,6 +32,7 @@ char* substring(char *destination, const char *source, int beg, int n) {
     // return the destination string
     return destination;
 }
+
 char *itoa(int num, char *str) {
     if(str == NULL)
         return NULL;
@@ -78,6 +79,30 @@ int getCount(char* name) {
     }
 }
 
+int getCount2(char* name) {
+    int i;
+    int count = 0;
+    for (i = 1; i < 145; i++) {
+        char* s = (char*)malloc(1000 * sizeof(char));
+        strcpy(s, name);
+        strcat(s, "/");
+        char* num = (char*)malloc(5 * sizeof(char));
+        itoa(i, num);
+        strcat(s, num);
+        FILE* f = fopen(s, "rt");
+        if (f == NULL) {
+            //return i;
+        }
+        else {
+            count = i;
+            fclose(f);
+        }
+        free(num);
+        free(s);
+    }
+    return count;
+}
+
 void makeDirectory(char* name) {
     char* s = (char*)malloc(1000 * sizeof(char));
     strcpy(s, "mailbox/");
@@ -110,7 +135,7 @@ void createMailbox() {
             int count = 0;
             char* line = (char*)malloc(1000 * sizeof(char));
             while (count < 3) {
-                fgets(line, "%*[ \n]", f);
+                fgets(line, 200, f);
                 count++;
             }
             while (fgetc(f) != ' ') {
@@ -153,6 +178,40 @@ void createMailbox() {
     free(currentdir);
 }
 
+int getFileSize(char *path, int i){
+    char* s = (char*)malloc(1000 * sizeof(char));
+    strcpy(s, path);
+    strcat(s,"/");
+    char* num = (char*)malloc(5 * sizeof(char));
+    itoa(i, num);
+    strcat(s,num);
+    int size;
+    FILE* f;
+    f = fopen(s, "rb");
+    if (f == NULL) return -1;
+    fseek(f, 0, SEEK_END);
+    size = ftell(f);
+    fclose(f);
+
+    return size;
+}
+
+int check(char *path, int i){
+    char * s = (char*)malloc(1000*sizeof(char));
+    strcpy(s,path);
+    strcat(s,"/");
+    char * num= (char*)malloc(5*sizeof(char));
+    itoa(i,num);
+    strcat(s,num);
+    FILE *f = fopen(s, "rt");
+    if(f==NULL){
+        return 1;
+    }else{
+        fclose(f);
+        return 0;
+    }
+}
+
 void workerThread(void *params) {
     int workerSock = *(int *) params;
     char buffer[256];
@@ -169,6 +228,7 @@ void workerThread(void *params) {
 
     int status = 1;
     int end = 0;
+    char* path = (char*)malloc(100 * sizeof(char));
     do {
         // Initialize buffer
         bzero(buffer, sizeof(buffer));
@@ -188,7 +248,6 @@ void workerThread(void *params) {
 
         // Do something with input (buffer)
 
-        char* path = (char*)malloc(100 * sizeof(char));
         // Command QUIT
         if (strcmp(command, "quit") == 0) {
             strcpy(buffer, "+OK user POP3 server signing off");
@@ -216,50 +275,125 @@ void workerThread(void *params) {
 
             free(s);
         }
-        else if (strcmp(command, "pass") == 0 && status == 1) {
-            strcpy(buffer, "do something pass\r\n");
+        else if (strcmp(command, "pass") == 0 && status == 2) {
+            strcpy(buffer, "-ERR where is the password?\r\n");
+            // HOW TO IMPLEMENT WITHOUT PASSWORDS?
         }
         else if (strcmp(command, "stat") == 0 && status == 2) {
-            strcpy(buffer, "do something stat\r\n");
+            int n = getCount2(path) -1;
+            int i;
+            int sum=0;
+            for(i=1; i<=n;i++){
+                int size = getFileSize(path, i);
+                sum+=size;
+            }
+            sprintf(buffer, "+OK %d %d\r\n", n, sum);
         }
         else if (strcmp(command, "retr") == 0 && status == 2) {
             char msg[sizeof(buffer)-5];
-            char filepath[sizeof(buffer-5+path)];
+            char filepath[sizeof(buffer)+sizeof(path)];
             substring(msg, buffer, 5, sizeof(buffer));
+            strcpy(filepath,"");
             strcat(filepath,path);
             strcat(filepath,"/");
             strcat(filepath,msg);
             FILE* f = fopen(filepath, "rt");
             if (f == NULL) {
                 strcpy(buffer, "-ERR no such message\r\n");
-            }else{
+            }
+            else {
                 char line[1000000];
-                char temp[100];
-                int size= getFileSize(char*path, int i);
+                char t[100];
+                int size = getFileSize(path, atoi(msg));
                 strcpy(buffer, "+OK ");
-                itoa(temp, size);
-                strcpy(buffer, temp);
-                strcpy(buffer, "Bytes \r\n");
+                itoa(size, t);
+                strcat(buffer, t);
+                strcat(buffer, "octets \r\n");
                 //Ignore Header
                 int count = 0;
                 while (count < 17) {
                     fgets(line, 200 , f);
                     count++;
                 }
-                do{ 
-                    char temp= fgetc(f);    
-                }    
-                while (char temp != 'EOF') 
-                strcpy(buffer, temp);                              
-                strcpy(buffer, ".\r\n"); 
+                char c;
+                while((c=fgetc(f))!=EOF){
+                    char string[2];
+                    string[0] = c;
+                    string[1] = '\0';
+                    strcat(buffer, string);
+                }
+                strcat(buffer, "\n.\r\n");
             }
-            
         }
         else if (strcmp(command, "list") == 0 && status == 2) {
-            strcpy(buffer, "do something list\r\n");
+            int l = 0;
+            if (sizeof(buffer) > 5) {
+                char msg[sizeof(buffer) - 5];
+                substring(msg, buffer, 5, sizeof(buffer));
+                l = atoi(msg);
+            }
+            //read buffer
+            int n = getCount2(path) - 1;
+            if (l == 0) {
+                int i;
+                int sum = 0;
+                int sizes[n];
+                for (i = 1; i <= n; i++) {
+                    int booli = check(path, i);
+                    if (booli == 0) {
+                        int size = getFileSize(path, i);
+                        sizes[i - 1] = size;
+                        sum += size;
+                    }
+                }
+                sprintf(buffer, "+OK %d messages (%d octets)\n", n, sum);
+                for (i = 1; i <= n; i++) {
+                    char temp[100];
+                    sprintf(temp, "%d %d\n", i, sizes[i - 1]);
+                    strcat(buffer, temp);
+                }
+                strcat(buffer, ".\r\n");
+            }
+            else {
+                char *file = (char *) malloc(5 * sizeof(char));
+                itoa(l, file);
+                char *s = (char *) malloc(1000 * sizeof(char));
+                strcpy(s, path);
+                strcat(s, "/");
+                strcat(s, file);
+                FILE *f = fopen(s, "rt");
+                if (f == NULL) {
+                    sprintf(buffer, "-ERR no such message, only %d messages in mailbox\r\n", n);
+                } else {
+                    fclose(f);
+                    int size = getFileSize(path, l);
+                    sprintf(buffer, "+OK %d %d\r\n", l, size);
+                }
+                free(file);
+                free(s);
+            }
         }
         else if (strcmp(command, "dele") == 0 && status == 2) {
-            strcpy(buffer, "do something dele\r\n");
+            char msg[sizeof(buffer)-5];
+            substring(msg, buffer, 5, sizeof(buffer));
+
+            char *s = (char *)malloc(1000 * sizeof(char));
+            strcpy(s, path);
+            strcat(s, "/");
+            strcat(s, msg);
+            FILE *f = fopen(s, "rt");
+            if (f == NULL) {
+                strcpy(buffer, "-ERR no such message\r\n");
+            }
+            else {
+                char *del = (char *)malloc(1000 * sizeof(char));
+                strcpy(del, "rm -rf ");
+                strcat(del, s);
+                system(del);
+                sprintf(buffer, "+OK message %s deleted\r\n", msg);
+                free(del);
+            }
+            free(s);
         }
         else {
             strcpy(buffer, "-ERR unrecognized command\r\n");
