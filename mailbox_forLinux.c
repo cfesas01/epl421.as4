@@ -22,19 +22,24 @@
  * @param count: how many mails he/she has in mailbox currently +1
  * @param currentdir: the path of the directory our program runs on.
  */
-void copyFile(int num, char* name,  char* currentdir) {
+void copyFile(int num, char* name,int count,  char* currentdir) {
     char* s = (char*)malloc(1000 * sizeof(char));
     char* number = (char*)malloc(5 * sizeof(char));
-    strcpy(s, "cp as4-supplementary\\");
+    char* rename = (char*)malloc(5 * sizeof(char));
+    strcpy(s, "copy as4-supplementary/");
     itoa(num, number, 10);
+    itoa(count, rename, 10);
     strcat(s, number);
     strcat(s, " ");
     strcat(s, currentdir);
-    strcat(s, "\\mailbox\\");
+    strcat(s, "/mailbox/");
     strcat(s, name);
+    strcat(s, "/");
+    strcat(s, rename);
     system(s);
     free(s);
     free(number);
+    free(rename);
 
 
 }
