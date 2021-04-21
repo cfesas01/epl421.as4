@@ -38,11 +38,18 @@ main(int argc, char *argv[]) {
         perror("connect");
         exit(1);
     }
-    printf("Requested connection to host %s, port %d\n", host, port);
+    //printf("Requested connection to host %s, port %d\n", host, port);
 
+    bzero(buffer, sizeof(buffer)); /* Initialize buffer */
+    if (read(sock, buffer, sizeof(buffer)) < 0) { /* Receive message */
+        perror("read");
+        exit(1);
+    }
+    printf("> %s", buffer);
+    int end = 0;
     do {
         bzero(buffer, sizeof(buffer)); /* Initialize buffer */
-        printf("Give input string: ");
+        printf("> ");
         fgets(buffer, sizeof(buffer), stdin); /* Read message from stdin */
         buffer[strlen(buffer)-1] = '\0'; /* Remove newline character */
 
@@ -50,14 +57,19 @@ main(int argc, char *argv[]) {
             perror("write");
             exit(1);
         }
-        bzero(buffer, sizeof(buffer)); /* Initialize buffer */
 
+        bzero(buffer, sizeof(buffer)); /* Initialize buffer */
         if (read(sock, buffer, sizeof(buffer)) < 0) { /* Receive message */
             perror("read");
             exit(1);
         }
-        printf("Read string: %s\n", buffer);
-    } while(strcmp(buffer, "end") != 0);
+        printf("> %s", buffer);
+        if (strcmp(buffer, "+OK user POP3 server signing off") == 0)
+            end = 1;
+
+    } while(end == 0);
+
+    printf("\n");
     close(sock);
     exit(0);
 }
